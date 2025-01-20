@@ -1,14 +1,17 @@
 /**
  * AI改写提示词
- * @param {string} originalPrompt - 原始提示词
- * @returns {Promise<string>} - 改写后的提示词
+ * @param {Object} templateData - 模板数据对象
+ * @param {string} templateData.templateName - 模板名称
+ * @param {string} templateData.scenarioDescription - 使用场景描述
+ * @param {string} templateData.templateContent - 模板内容
+ * @returns {Promise<Object>} - 改写后的模板数据
  */
 import db from './db'
 
-export async function rewritePrompt(originalPrompt) {
+export async function rewritePrompt(templateData) {
   try {
     // 验证输入内容
-    if (!originalPrompt || originalPrompt.trim().length === 0) {
+    if (!templateData || !templateData.templateContent || templateData.templateContent.trim().length === 0) {
       throw new Error('请先输入需要改写的内容')
     }
 
@@ -30,24 +33,37 @@ export async function rewritePrompt(originalPrompt) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}` // 使用用户配置的 API 密钥
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: model, // 使用配置的 AI 模型
+        model: model,
         messages: [
           {
             role: "system",
-            // 系统提示,定义AI助手的角色和任务
-            content: "你是一个专业的提示词优化专家。你需要优化用户提供的提示词，使其更加清晰、具体和有效。保持原有意图的同时，添加必要的上下文和细节。"
+            content: `你是一个专业的提示词优化专家。你需要优化用户提供的提示词模板，包括模板名称、使用场景描述和模板内容。
+保持原有意图的同时，添加必要的上下文和细节。templateName不超过20字，scenarioDescription不超过30字，templateContent不超过500字
+
+请按照以下 JSON 格式输出优化结果：
+{
+  "templateName": "优化后的模板名称",
+  "scenarioDescription": "优化后的使用场景描述",
+  "templateContent": "优化后的模板内容"
+}`
           },
           {
             role: "user",
-            // 用户输入,包含待优化的提示词
-            content: `请优化以下提示词，使其更加有效：\n\n${originalPrompt.trim()}`
+            content: `请优化以下提示词模板：
+            
+模板名称：${templateData.templateName || ''}
+使用场景：${templateData.scenarioDescription || ''}
+模板内容：${templateData.templateContent.trim()}`
           }
         ],
-        temperature: temperature, // 使用配置的随机性参数
-        max_tokens: maxTokens // 使用配置的最大长度
+        temperature: temperature,
+        max_tokens: maxTokens,
+        response_format: {
+          type: 'json_object'  // 启用 JSON 输出格式
+        }
       })
     });
 
@@ -59,8 +75,20 @@ export async function rewritePrompt(originalPrompt) {
 
     // 解析API响应数据
     const data = await response.json();
-    // 返回优化后的提示词
-    return data.choices[0].message.content;
+    const result = data.choices[0].message.content;
+
+    // 尝试解析返回的JSON数据
+    try {
+      const parsedResult = JSON.parse(result);
+      return {
+        templateName: parsedResult.templateName || templateData.templateName,
+        scenarioDescription: parsedResult.scenarioDescription || templateData.scenarioDescription,
+        templateContent: parsedResult.templateContent || templateData.templateContent
+      };
+    } catch (parseError) {
+      console.error('解析AI返回结果失败:', parseError);
+      throw new Error('AI返回的数据格式不正确');
+    }
   } catch (error) {
     // 错误处理和日志记录
     console.error('AI改写失败:', error);

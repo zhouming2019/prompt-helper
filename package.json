@@ -1,6 +1,6 @@
 {
   "name": "prompt-helper",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "可以积累和复用的提词器工具",
   "main": "src/main/main.js",
   "scripts": {
@@ -71,11 +71,16 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         }
       ],
       "icon": "resources/icon.ico",

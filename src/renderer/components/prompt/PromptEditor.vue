@@ -426,11 +426,30 @@ export default {
         // 设置改写状态
         this.isRewriting = true;
 
+        // 准备完整的模板数据
+        const templateData = {
+          templateName: this.editedName,
+          scenarioDescription: this.editedScenario,
+          templateContent: content
+        };
+
         // 调用 AI 改写服务
-        const rewrittenContent = await rewritePrompt(content);
+        const result = await rewritePrompt(templateData);
         
         // 更新编辑器内容
-        this.editor.setValue(rewrittenContent);
+        this.editor.setValue(result.templateContent);
+        
+        // 更新模板名称
+        this.editedName = result.templateName;
+        if (this.$refs.nameEditor) {
+          this.$refs.nameEditor.textContent = result.templateName;
+        }
+        
+        // 更新场景描述
+        this.editedScenario = result.scenarioDescription;
+        if (this.$refs.scenarioEditor) {
+          this.$refs.scenarioEditor.textContent = result.scenarioDescription;
+        }
         
         // 提示成功
         ElMessage.success('AI改写完成');
@@ -601,14 +620,15 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    padding: 12px 12px;
     background-color: var(--el-bg-color);
     border-top: 1px solid var(--el-border-color-lighter);  // 使用更浅的边框颜色
 
     /* 左侧按钮组样式 */
     .left-buttons {
       display: flex;
-      gap: 12px;
+      gap: 4px;
+      flex: 1; // 填充剩余宽度
     }
 
     /* 复制按钮样式 */
